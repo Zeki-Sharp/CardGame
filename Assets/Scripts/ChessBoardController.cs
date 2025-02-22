@@ -20,7 +20,7 @@ public class ChessBoardController : MonoBehaviour
         // 获取棋盘的碰撞体组件
         _chessBoardTransCollider = ChessBoardTrans.GetComponent<BoxCollider2D>();
 
-        // 初始化棋盘数据（这里是一个5x5的棋盘）
+        // 初始化棋盘数据
         _chessBoard = new ChessBoard(6, 4);
 
         // 设置棋盘碰撞体的大小，使其覆盖整个棋盘区域

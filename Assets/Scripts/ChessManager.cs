@@ -13,8 +13,15 @@ public class ChessManager : MonoBehaviour
 
     private List<ChessPieceData> pieceDataList = new List<ChessPieceData>();
 
+    public Camera cam; // 主摄像机
+    [SerializeField]private ChessPiece selectedPiece = null; // 当前选中的棋子
+
     void Start()
     {
+        if (cam == null)
+        {
+            cam = Camera.main;
+        }
         // 读取 Excel 数据
         LoadChessPieceData(filePath);
 
@@ -23,6 +30,12 @@ public class ChessManager : MonoBehaviour
 
         // 随机分配棋子位置
         InitializeChessPieces();
+
+    }
+
+    void Update()
+    {
+       HandleSelection();
     }
 
     // 读取 Excel 文件并加载棋子数据
@@ -94,6 +107,49 @@ public class ChessManager : MonoBehaviour
 
             // 移除已占用的位置
             availablePositions.RemoveAt(randomIndex);
+        }
+    }
+
+    void HandleSelection()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("Mouse Clicked");
+
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            int layerMask = LayerMask.GetMask("ChessPieceLayer");
+            RaycastHit2D hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity, layerMask);
+
+            if (hit.collider != null)
+            {
+                Debug.Log($"Hit: {hit.collider.name}");
+                ChessPiece piece = hit.collider.GetComponent<ChessPiece>();
+
+                if (piece != null && piece != selectedPiece)
+                {
+                    if (selectedPiece != null)
+                    {
+                        selectedPiece.Deselect();
+                    }
+
+                    selectedPiece = piece;
+                    selectedPiece.Select();
+                }
+                else if (piece == selectedPiece)
+                {
+                    selectedPiece.Deselect();
+                    selectedPiece = null;
+                }
+            }
+            else
+            {
+                Debug.Log("No Hit");
+                if (selectedPiece != null)
+                {
+                    selectedPiece.Deselect();
+                    selectedPiece = null;
+                }
+            }
         }
     }
 }
