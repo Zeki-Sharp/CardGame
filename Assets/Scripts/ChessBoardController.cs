@@ -10,7 +10,7 @@ public class ChessBoardController : MonoBehaviour
     public Vector2 CellOffset = new Vector2(0.5f, 0.5f); // 单元格之间的偏移量
     public Transform ChessBoardTrans; // 棋盘的父级对象，用于存放所有单元格视图
     private ChessBoard _chessBoard; // 棋盘的核心数据结构，包含棋盘的尺寸和所有单元格
-    private List<CellView> _cellViews = new List<CellView>(); // 用于存储每个单元格视图的列表
+    public List<CellView> _cellViews = new List<CellView>(); // 用于存储每个单元格视图的列表
     private BoxCollider2D _chessBoardTransCollider; // 棋盘的碰撞体，用于控制棋盘的物理区域
     private float CellUnit = CellSize / 100f; // 单元格的单位转换（从像素转换到网格单位）
 
