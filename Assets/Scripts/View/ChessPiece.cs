@@ -105,6 +105,32 @@ public class ChessPiece : MonoBehaviour
         return false;
     }
 
+    // === 棋子合法攻击判断（默认实现） ===
+    public virtual bool CanAttackTarget(ChessPiece targetPiece)
+    {
+    
+
+        // 获取当前位置和目标位置
+        Vector2Int currentPos = this.currentPosition;
+        Vector2Int targetPos = targetPiece.currentPosition;
+
+        // 计算位置差值
+        int deltaX = Mathf.Abs(targetPos.x - currentPos.x);
+        int deltaY = Mathf.Abs(targetPos.y - currentPos.y);
+
+        // 检查是否为上下左右一步
+        bool isOneStepMove = (deltaX == 1 && deltaY == 0) || (deltaX == 0 && deltaY == 1);
+        if (isOneStepMove)
+        {
+            Debug.Log($"{name} 可以攻击 {targetPiece.name}");
+            return true;
+        }
+
+        Debug.Log($"{name} 无法攻击 {targetPiece.name}，不在攻击范围内");
+        return false;
+    }
+
+
     // 选中棋子
     public void Select()
     {
