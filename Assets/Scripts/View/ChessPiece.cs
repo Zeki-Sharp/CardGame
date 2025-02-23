@@ -1,9 +1,11 @@
+using System.Data.Common;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 
 public class ChessPiece : MonoBehaviour
 {
     public string side;  // 阵营：Red / Black
+    public string _name;
     public string name;  // 类型：Pawn / Chariot 等
     public int attack;
     public int health;
@@ -19,7 +21,7 @@ public class ChessPiece : MonoBehaviour
     public void Initialize(ChessPieceData data)
     {
         this.side = data.side;
-        this.name = data.name;
+        this.name = $"{side}_{data.name}";
         this.attack = data.attack;
         this.health = data.health;
         this.specialAbility = data.specialAbility;
@@ -51,7 +53,7 @@ public class ChessPiece : MonoBehaviour
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         }
 
-        string imagePath = $"ChessPiecesSprites/{side}_{name}";
+        string imagePath = $"ChessPiecesSprites/{name}";
         spriteRenderer.sprite = Resources.Load<Sprite>(imagePath);
     }
 
@@ -81,6 +83,27 @@ public class ChessPiece : MonoBehaviour
         }
     }
 
+    // === 棋子合法移动判断（默认实现） ===
+    public virtual bool IsLegalMove(Vector2Int targetPosition)
+    {
+        // 获取当前位置
+        Vector2Int currentPos = currentPosition;
+
+        // 计算位置差值
+        int deltaX = Mathf.Abs(targetPosition.x - currentPos.x);
+        int deltaY = Mathf.Abs(targetPosition.y - currentPos.y);
+
+        // 默认规则：上下左右一步
+        bool isOneStepMove = (deltaX == 1 && deltaY == 0) || (deltaX == 0 && deltaY == 1);
+        if (isOneStepMove)
+        {
+            Debug.Log($"{name} 合法移动到 {targetPosition}");
+            return true;
+        }
+
+        Debug.Log($"{name} 非法移动到 {targetPosition}");
+        return false;
+    }
 
     // 选中棋子
     public void Select()
