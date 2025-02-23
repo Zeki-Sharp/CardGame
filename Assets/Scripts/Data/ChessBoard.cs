@@ -9,6 +9,7 @@ public class ChessBoard
     private List<Cell> _cells = new List<Cell>(); // 存储所有单元格的列表
 
     public List<Cell> Cells => _cells; // 公开属性，返回棋盘上的所有单元格
+    public ChessPiece[,] piecePositions;
 
     // 构造函数，用于初始化棋盘的尺寸和单元格
     public ChessBoard(int width, int height)
@@ -26,5 +27,17 @@ public class ChessBoard
                 _cells.Add(cell);
             }
         }
+
+        // 初始化棋盘占用状态
+        piecePositions = new ChessPiece[Width, Height];
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                piecePositions[x, y] = null; // 初始状态为空
+            }
+        }
     }
+
+
 }

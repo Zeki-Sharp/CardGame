@@ -14,6 +14,10 @@ public class ChessBoardController : MonoBehaviour
     private BoxCollider2D _chessBoardTransCollider; // 棋盘的碰撞体，用于控制棋盘的物理区域
     private float CellUnit = CellSize / 100f; // 单元格的单位转换（从像素转换到网格单位）
 
+    // CellView → Cell
+    private Dictionary<CellView, Cell> cellViewMap = new Dictionary<CellView, Cell>();
+    public Dictionary<CellView, Cell> CellViewMap => cellViewMap;
+
     // 初始化函数，通常用于设置棋盘和单元格
     public void Awake()
     {
@@ -24,7 +28,7 @@ public class ChessBoardController : MonoBehaviour
         _chessBoard = new ChessBoard(6, 4);
 
         // 设置棋盘碰撞体的大小，使其覆盖整个棋盘区域
-        _chessBoardTransCollider.size = new Vector2(_chessBoard.Width * (CellSize+CellOffset.x), _chessBoard.Height * (CellSize+CellOffset.y));
+        _chessBoardTransCollider.size = new Vector2(_chessBoard.Width * (CellSize + CellOffset.x), _chessBoard.Height * (CellSize + CellOffset.y));
         _chessBoardTransCollider.offset = Vector2.zero; // 设定碰撞体的偏移量
 
         // 遍历棋盘上的每个单元格，实例化对应的单元格视图
@@ -45,13 +49,22 @@ public class ChessBoardController : MonoBehaviour
                 // 将视图添加到列表中
                 _cellViews.Add(cellView);
 
+                // 建立 CellView → Cell 的映射关系
+                cellViewMap.Add(cellView, cell);
+
                 // 计算该单元格的实际位置（用于在棋盘上显示）
                 var x = cell.CellPosition.x;
                 var y = cell.CellPosition.y;
 
                 // 设置视图对象的局部坐标，根据单元格的位置来排列
-                cellViewTransform.localPosition = new Vector3(CellUnit * x+CellOffset.x*x, CellUnit * y+CellOffset.y*y);
+                cellViewTransform.localPosition = new Vector3(CellUnit * x + CellOffset.x * x, CellUnit * y + CellOffset.y * y);
             }
         }
     }
+
+    public ChessBoard GetChessBoard()
+    {
+        return _chessBoard;
+    }
+
 }

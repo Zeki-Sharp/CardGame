@@ -12,6 +12,8 @@ public class ChessPiece : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Material outlineMaterial;
     private bool isSelected = false;
+    public Vector2Int currentPosition;
+
 
     // ³õÊ¼»¯Æå×Ó
     public void Initialize(ChessPieceData data)

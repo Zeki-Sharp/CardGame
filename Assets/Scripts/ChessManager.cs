@@ -14,7 +14,7 @@ public class ChessManager : MonoBehaviour
     private List<ChessPieceData> pieceDataList = new List<ChessPieceData>();
 
     public Camera cam; // 主摄像机
-    [SerializeField]private ChessPiece selectedPiece = null; // 当前选中的棋子
+    [SerializeField] private ChessPiece selectedPiece = null; // 当前选中的棋子
 
     void Start()
     {
@@ -35,7 +35,7 @@ public class ChessManager : MonoBehaviour
 
     void Update()
     {
-       HandleSelection();
+        HandleSelection(); // 保留 HandleSelection 方法，确保点击选择功能不受影响
     }
 
     // 读取 Excel 文件并加载棋子数据
@@ -78,35 +78,60 @@ public class ChessManager : MonoBehaviour
     // 随机分配棋子位置
     void InitializeChessPieces()
     {
-        List<Transform> availablePositions = new List<Transform>();
+        List<CellView> availableCells = new List<CellView>();
 
-        // 将所有格子的位置添加到 availablePositions 列表
+        // 将所有格子的位置添加到 availableCells 列表
         foreach (var cellView in chessBoardController._cellViews)
         {
-            availablePositions.Add(cellView.transform); // 获取每个 CellView 的 Transform 位置
+            availableCells.Add(cellView); // 获取每个 CellView
         }
 
         // 随机为棋子分配位置
         for (int i = 0; i < pieceDataList.Count; i++)
         {
             ChessPieceData data = pieceDataList[i];
+            bool isPlaced = false;
 
-            // 随机选择一个位置
-            int randomIndex = Random.Range(0, availablePositions.Count);
-            Transform selectedPosition = availablePositions[randomIndex];
+            while (!isPlaced)
+            {
+                // 随机选择一个 CellView
+                int randomIndex = Random.Range(0, availableCells.Count);
+                CellView selectedCellView = availableCells[randomIndex];
 
-            // 创建棋子实例，并将其放置到随机位置
-            GameObject pieceObj = Instantiate(chessPiecePrefab, selectedPosition.position, Quaternion.identity, chessPieceParent);
+                // === 通过 CellViewMap 获取 CellPosition ===
+                Cell selectedCell = chessBoardController.CellViewMap[selectedCellView];
+                Vector2Int startPosition = selectedCell.CellPosition;
+                // ========================================
 
-            // 获取棋子组件并初始化
-            ChessPiece piece = pieceObj.GetComponent<ChessPiece>();
-            piece.Initialize(data);  // 传递数据给棋子进行初始化
+                // === 使用 GetChessBoard() 间接访问 piecePositions ===
+                if (chessBoardController.GetChessBoard().piecePositions[startPosition.x, startPosition.y] == null)
+                {
+                    // 位置未被占用，则实例化棋子
+                    GameObject pieceObj = Instantiate(chessPiecePrefab, selectedCellView.transform.position, Quaternion.identity, chessPieceParent);
+                    ChessPiece piece = pieceObj.GetComponent<ChessPiece>();
 
-            // 设置棋子的名字
-            pieceObj.name = $"{data.side}_{data.name}_{i + 1}";  // 格式如: Red_Pawn_1, Black_Knight_2
+                    // 初始化棋子并传入初始位置
+                    piece.Initialize(data);
+                    piece.currentPosition = startPosition;
 
-            // 移除已占用的位置
-            availablePositions.RemoveAt(randomIndex);
+                    // 更新棋盘占用状态
+                    chessBoardController.GetChessBoard().piecePositions[startPosition.x, startPosition.y] = piece;
+
+                    // 设置棋子的名字
+                    pieceObj.name = $"{data.side}_{data.name}_{i + 1}";
+
+                    // 移除已占用的位置
+                    availableCells.RemoveAt(randomIndex);
+
+                    // 标记棋子已成功放置
+                    isPlaced = true;
+                }
+                else
+                {
+                    // 如果已被占用，重新随机选择
+                    Debug.LogWarning($"Position {startPosition} already occupied. Re-selecting...");
+                }
+            }
         }
     }
 
@@ -152,4 +177,5 @@ public class ChessManager : MonoBehaviour
             }
         }
     }
+
 }
