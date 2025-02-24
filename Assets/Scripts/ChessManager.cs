@@ -250,17 +250,30 @@ public class IdleState : IChessState
         if (Input.GetMouseButtonDown(0))
         {
             object clickedObject = manager.GetClickedObject();
-            if (clickedObject is ChessPiece piece)
+
+            // === 先判断类型，再判断 canBeSelected ===
+            if (clickedObject is ChessPiece)
             {
-                if (piece.side == manager.CurrentPlayerSide)
+                ChessPiece clickedPiece = (ChessPiece)clickedObject;
+
+                // === 新增 canBeSelected 判断 ===
+                if (!clickedPiece.canBeSelected)
                 {
-                    manager.selectedPiece = piece;
+                    Debug.Log($"{clickedPiece.gameObject.name} 不可被选中，状态机不切换");
+                    return;  // 背面朝上时直接返回，不进入 Select 状态
+                }
+
+                // 如果可以被选中且是当前回合的棋子
+                if (clickedPiece.side == manager.CurrentPlayerSide)
+                {
+                    manager.selectedPiece = clickedPiece;
                     manager.selectedPiece.Select();
                     manager.SetState(new SelectState(manager));
                 }
             }
         }
     }
+
 
     public void Exit()
     {
@@ -312,6 +325,7 @@ public class SelectState : IChessState
             }
         }
     }
+
 
     public void Exit()
     {

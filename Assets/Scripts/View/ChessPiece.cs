@@ -16,6 +16,10 @@ public class ChessPiece : MonoBehaviour
     private bool isSelected = false;
     public Vector2Int currentPosition;
 
+    public GameObject cardFront;
+    public GameObject cardBack;
+    public bool canBeSelected = false;  // 默认不可选中
+
 
     // 初始化棋子
     public void Initialize(ChessPieceData data)
@@ -25,36 +29,23 @@ public class ChessPiece : MonoBehaviour
         this.attack = data.attack;
         this.health = data.health;
         this.specialAbility = data.specialAbility;
-
-        SetPieceAppearance();  // 设置棋子的外观
     }
 
     void Awake()
     {
         // 获取 SpriteRenderer
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer = cardFront.GetComponent<SpriteRenderer>();
 
-        // 获取 Outline 材质
-        outlineMaterial = spriteRenderer.material;
+        // 暂时注释 Outline Material 的初始化
+        // outlineMaterial = spriteRenderer.material;
 
         // 初始化边框颜色
         SetOutline(false);
-    }
 
-    // 设置棋子的外观（如图像）
-    void SetPieceAppearance()
-    {
-        // 使用类成员变量 spriteRenderer
-        spriteRenderer = GetComponent<SpriteRenderer>();
-
-        // 如果在当前对象上找不到 SpriteRenderer，则从子对象中获取
-        if (spriteRenderer == null)
-        {
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        }
-
-        string imagePath = $"ChessPiecesSprites/{name}";
-        spriteRenderer.sprite = Resources.Load<Sprite>(imagePath);
+        // 初始化 CardFront 和 CardBack
+        cardFront = transform.Find("CardFront").gameObject;
+        cardBack = transform.Find("CardBack").gameObject;
+        ShowBack();  // 默认背面朝上
     }
 
     // 设置边框颜色和显示状态
@@ -134,6 +125,14 @@ public class ChessPiece : MonoBehaviour
     // 选中棋子
     public void Select()
     {
+        // 增加 canBeSelected 判断，背面朝上时不响应点击
+        if (!canBeSelected)
+        {
+            Debug.Log($"{gameObject.name} 不可被选中");
+            return;  // 直接返回，不响应点击
+        }
+
+        // 如果可选中，继续执行选中逻辑
         isSelected = true;
         Debug.Log($"{gameObject.name} Selected");
         SetOutline(true);
@@ -145,5 +144,19 @@ public class ChessPiece : MonoBehaviour
         isSelected = false;
         Debug.Log($"{gameObject.name} Deselected");
         SetOutline(false);
+    }
+
+    public void ShowFront()
+    {
+        cardFront.SetActive(true);
+        cardBack.SetActive(false);
+        canBeSelected = true;  // 翻面后可选中
+    }
+
+    public void ShowBack()
+    {
+        cardFront.SetActive(false);
+        cardBack.SetActive(true);
+        canBeSelected = false;  // 背面朝上不可选中
     }
 }

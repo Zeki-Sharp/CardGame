@@ -295,3 +295,5 @@ MonoBehaviour:
   health: 0
   specialAbility: 
   currentPosition: {x: 0, y: 0}
+  cardFront: {fileID: 1075853632991010290}
+  cardBack: {fileID: 3634107616343639232}
