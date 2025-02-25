@@ -303,25 +303,54 @@ public class ChessManager : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 object clickedObject = manager.GetClickedObject();
-                if (clickedObject is ChessPiece piece)
+
+                // === 点击的是棋子 ===
+                if (clickedObject is ChessPiece clickedPiece)
                 {
-                    if (piece.side == manager.CurrentPlayerSide)
+                    // === 如果点击的是己方正面卡牌 ===
+                    if (clickedPiece.side == manager.CurrentPlayerSide && clickedPiece.canBeSelected)
                     {
-                        manager.selectedPiece.Deselect();
-                        manager.selectedPiece = piece;
-                        manager.selectedPiece.Select();
+                        // === 如果点击的是当前已选中的棋子，保持选中状态，不切换 ===
+                        if (clickedPiece == manager.selectedPiece)
+                        {
+                            return;
+                        }
+
+                        // === 新增：攻击范围判断 ===
+                        if (manager.selectedPiece.CanAttackTarget(clickedPiece))
+                        {
+                            // === 如果在攻击范围内，进入 AttackState 并准备攻击 ===
+                            manager.SetState(new AttackState(manager, clickedPiece));
+                            return;
+                        }
+                        else
+                        {
+                            // === 如果不在攻击范围内，直接切换选中，不返回 SelectState，不结束回合 ===
+                            manager.selectedPiece.Deselect();
+                            manager.selectedPiece = clickedPiece;
+                            manager.selectedPiece.Select();
+                            return;
+                        }
                     }
                     else
                     {
-                        manager.SetState(new AttackState(manager, piece));
+                        // === 如果点击的是敌方棋子，进入 AttackState 并准备攻击 ===
+                        manager.SetState(new AttackState(manager, clickedPiece));
+                        return;
                     }
                 }
+
+                // === 点击的是空格子 ===
                 else if (clickedObject is Cell cell)
                 {
+                    // === 进入 MoveState 并更新位置 ===
                     manager.SetState(new MoveState(manager, cell.CellPosition));
                 }
+
+                // === 点击的是空白区域 ===
                 else
                 {
+                    // === 切换到 IdleState 并取消选中 ===
                     manager.selectedPiece.Deselect();
                     manager.selectedPiece = null;
                     manager.SetState(new IdleState(manager));
@@ -329,12 +358,12 @@ public class ChessManager : MonoBehaviour
             }
         }
 
-
         public void Exit()
         {
             Debug.Log("退出 Select 状态");
         }
     }
+
 
     public class MoveState : IChessState
     {
@@ -351,52 +380,25 @@ public class ChessManager : MonoBehaviour
         {
             Debug.Log("进入 Move 状态");
 
-            // === 调用棋子自身的合法移动判断 ===
-            if (manager.selectedPiece.IsLegalMove(targetPosition))
-            {
-                // === 判断目标格子状态 ===
-                ChessPiece targetPiece = manager.chessBoardController.GetChessBoard().piecePositions[targetPosition.x, targetPosition.y];
+            // === 统一更新棋盘状态和棋子位置 ===
 
-                // === 目标格子为空：直接移动 ===
-                if (targetPiece == null)
-                {
-                    // 更新棋盘占用状态
-                    manager.chessBoardController.GetChessBoard().piecePositions[manager.selectedPiece.currentPosition.x, manager.selectedPiece.currentPosition.y] = null;
-                    manager.chessBoardController.GetChessBoard().piecePositions[targetPosition.x, targetPosition.y] = manager.selectedPiece;
+            // === 1. 将攻击方的当前位置设置为空 ===
+            manager.chessBoardController.GetChessBoard().piecePositions[manager.selectedPiece.currentPosition.x, manager.selectedPiece.currentPosition.y] = null;
 
-                    // 更新棋子的当前位置
-                    manager.selectedPiece.currentPosition = targetPosition;
+            // === 2. 将目标位置设置为攻击方棋子 ===
+            manager.chessBoardController.GetChessBoard().piecePositions[targetPosition.x, targetPosition.y] = manager.selectedPiece;
 
-                    // 移动棋子的物理位置
-                    manager.selectedPiece.transform.position = manager.GetCellWorldPosition(targetPosition);
+            // === 3. 更新 selectedPiece 的 currentPosition 和 transform.position ===
+            manager.selectedPiece.currentPosition = targetPosition;
+            manager.selectedPiece.transform.position = manager.GetCellWorldPosition(targetPosition);
 
-                    Debug.Log($"{manager.selectedPiece.name} 移动到 {targetPosition}");
+            Debug.Log($"{manager.selectedPiece.name} 移动到 {targetPosition}");
 
-                    // 移动后，切换回合
-                    manager.selectedPiece.Deselect();
-                    manager.selectedPiece = null;
-                    manager.SwitchTurn();
-                    manager.SetState(new IdleState(manager));
-                }
-                // === 目标格子被对方棋子占用：切换到 AttackState ===
-                else if (targetPiece.side != manager.CurrentPlayerSide)
-                {
-                    Debug.Log($"准备攻击：{manager.selectedPiece.name} 准备攻击 {targetPiece.name}");
-                    manager.SetState(new AttackState(manager, targetPiece));
-                }
-                else
-                {
-                    Debug.Log("目标格子被己方棋子占用，非法移动");
-                    // 保持选中状态，返回 SelectState
-                    manager.SetState(new SelectState(manager));
-                }
-            }
-            else
-            {
-                Debug.Log("棋子自身规则不允许移动，保持选中状态");
-                // 返回 SelectState，不取消选中
-                manager.SetState(new SelectState(manager));
-            }
+            // === 4. 移动完成后，切换到 IdleState 并结束回合 ===
+            manager.selectedPiece.Deselect();
+            manager.selectedPiece = null;
+            manager.SwitchTurn();
+            manager.SetState(new IdleState(manager));
         }
 
         // === 修复：显式实现 IChessState 接口的 HandleInput 方法 ===
@@ -408,6 +410,8 @@ public class ChessManager : MonoBehaviour
             Debug.Log("退出 Move 状态");
         }
     }
+
+
 
     public class AttackState : IChessState
     {
@@ -424,49 +428,77 @@ public class ChessManager : MonoBehaviour
         {
             Debug.Log("进入 Attack 状态");
 
-            // === 调用棋子自身的合法攻击判断 ===
-            if (manager.selectedPiece.CanAttackTarget(targetPiece))
+            // === 新增：攻击范围判断 ===
+            if (!manager.selectedPiece.CanAttackTarget(targetPiece))
             {
-                Debug.Log($"{manager.selectedPiece.name} 攻击 {targetPiece.name}");
-
-                // === 移除被攻击的棋子 ===
-                Object.Destroy(targetPiece.gameObject);
-
-                // 更新棋盘占用状态
-                Vector2Int oldPosition = manager.selectedPiece.currentPosition;
-                Vector2Int newPosition = targetPiece.currentPosition;
-                manager.chessBoardController.GetChessBoard().piecePositions[oldPosition.x, oldPosition.y] = null;
-                manager.chessBoardController.GetChessBoard().piecePositions[newPosition.x, newPosition.y] = manager.selectedPiece;
-
-                // 更新棋子的当前位置
-                manager.selectedPiece.currentPosition = newPosition;
-
-                // 移动棋子的物理位置
-                manager.selectedPiece.transform.position = manager.GetCellWorldPosition(newPosition);
-
-                Debug.Log($"{manager.selectedPiece.name} 移动到 {newPosition}");
-
-                // 攻击后，切换回合
-                manager.selectedPiece.Deselect();
-                manager.selectedPiece = null;
-                manager.SwitchTurn();
-                manager.SetState(new IdleState(manager));
-            }
-            else
-            {
-                Debug.Log("攻击不合法，保持选中状态");
-                // 返回 SelectState，不取消选中
+                Debug.Log("攻击目标不在攻击范围内，返回 SelectState");
                 manager.SetState(new SelectState(manager));
+                return;
+            }
+
+            // === 攻击目标为背面卡牌 ===
+            if (!targetPiece.canBeSelected)
+            {
+                // === 无论敌我关系，都翻面并变为可选中 ===
+                targetPiece.ShowFront();
+                Debug.Log($"{targetPiece.name} 被翻面并变为可选中");
+
+                // === 如果是敌方背面卡牌，翻面后直接销毁，并进入 MoveState 更新位置 ===
+                if (targetPiece.side != manager.selectedPiece.side)
+                {
+                    Debug.Log($"{targetPiece.name} 是敌方背面卡牌，翻面后被销毁");
+                    Object.Destroy(targetPiece.gameObject);
+
+                    // === 进入 MoveState 并更新位置 ===
+                    manager.SetState(new MoveState(manager, targetPiece.currentPosition));
+                    return;
+                }
+                else
+                {
+                    // === 如果是己方背面卡牌，翻面后不销毁，仅变为可选中，保持在原地 ===
+                    Debug.Log($"{targetPiece.name} 是己方背面卡牌，翻面后变为可选中，不受伤害");
+
+                    // === 进入 IdleState 并结束回合 ===
+                    manager.selectedPiece.Deselect();
+                    manager.selectedPiece = null;
+                    manager.SwitchTurn();
+                    manager.SetState(new IdleState(manager));
+                    return;
+                }
+            }
+
+            // === 攻击目标为正面卡牌 ===
+            if (targetPiece.canBeSelected)
+            {
+                // === 如果是敌方正面卡牌，直接销毁，并进入 MoveState 更新位置 ===
+                if (targetPiece.side != manager.selectedPiece.side)
+                {
+                    Debug.Log($"{targetPiece.name} 是敌方正面卡牌，被销毁");
+                    Object.Destroy(targetPiece.gameObject);
+
+                    // === 进入 MoveState 并更新位置 ===
+                    manager.SetState(new MoveState(manager, targetPiece.currentPosition));
+                    return;
+                }
+                else
+                {
+                    // === 如果是己方正面卡牌，操作无效，返回 SelectState 并保持选中状态，不结束回合 ===
+                    Debug.Log("无法攻击己方正面卡牌，返回 SelectState");
+                    manager.SetState(new SelectState(manager));
+                    return;
+                }
             }
         }
 
-        // === 修复：显式实现 IChessState 接口的 HandleInput 方法 ===
+        // === 显式实现 IChessState 接口的 HandleInput 方法 ===
         void IChessState.HandleInput() { }
 
-        // === 修复：显式实现 IChessState 接口的 Exit 方法 ===
+        // === 显式实现 IChessState 接口的 Exit 方法 ===
         void IChessState.Exit()
         {
             Debug.Log("退出 Attack 状态");
         }
     }
+
+
 }
