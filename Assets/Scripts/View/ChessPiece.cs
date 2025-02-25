@@ -29,6 +29,9 @@ public class ChessPiece : MonoBehaviour
         this.attack = data.attack;
         this.health = data.health;
         this.specialAbility = data.specialAbility;
+
+        //正面卡面图片调用
+        LoadSprite();
     }
 
     void Awake()
@@ -46,6 +49,28 @@ public class ChessPiece : MonoBehaviour
         cardFront = transform.Find("CardFront").gameObject;
         cardBack = transform.Find("CardBack").gameObject;
         ShowBack();  // 默认背面朝上
+    }
+
+    // === 动态加载 Sprite 的方法 ===
+    private void LoadSprite()
+    {
+        // 拼接图片路径
+        string imagePath = $"ChessPiecesSprites/{name}";
+        Sprite loadedSprite = Resources.Load<Sprite>(imagePath);
+
+        if (loadedSprite != null)
+        {
+            // === 设置 CardFront 的 Sprite ===
+            SpriteRenderer frontRenderer = cardFront.GetComponent<SpriteRenderer>();
+            if (frontRenderer != null)
+            {
+                frontRenderer.sprite = loadedSprite;
+            }
+        }
+        else
+        {
+            Debug.LogError($"未找到图片资源：{imagePath}");
+        }
     }
 
     // 设置边框颜色和显示状态
